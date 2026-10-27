@@ -1,10 +1,1265 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Воронка сделок и ЧКД | Планер</title>
-<!-- SEE ARTIFACTS FILE - partial push test -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>Планер · Мини-SaaS</title>
+  <style>
+    :root {
+      --bg: #f4f6fa;
+      --surface: #ffffff;
+      --surface2: #f0f3f8;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --accent-hover: #4338ca;
+      --success: #059669;
+      --success-soft: #d1fae5;
+      --warning: #d97706;
+      --warning-soft: #fef3c7;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --purple: #7c3aed;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 12px rgba(15,23,42,.04);
+      --sidebar-w: 260px;
+      --header-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      min-height: 100dvh;
+    }
+    button, input, select, textarea { font: inherit; }
+    a { color: inherit; text-decoration: none; }
+
+    /* Layout */
+    .app { display: flex; min-height: 100dvh; }
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 50;
+      transition: transform .25s ease;
+    }
+    .sidebar-brand {
+      height: var(--header-h);
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      display: grid; place-items: center; color: #fff; font-size: .9rem;
+    }
+    .nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      color: var(--muted); font-weight: 500; font-size: .92rem;
+      cursor: pointer; border: none; background: transparent; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+    .nav-item .ico { width: 20px; text-align: center; font-size: 1rem; }
+    .nav-section {
+      font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+      color: var(--muted); padding: 14px 12px 6px; font-weight: 600;
+    }
+    .sidebar-foot {
+      padding: 12px; border-top: 1px solid var(--border);
+      font-size: .82rem; color: var(--muted);
+    }
+
+    .main {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+    .topbar {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; gap: 12px; position: sticky; top: 0; z-index: 40;
+    }
+    .topbar-title { font-weight: 700; font-size: 1.1rem; }
+    .topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .menu-btn {
+      display: none; border: 1px solid var(--border); background: var(--surface);
+      width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+    }
+    .overlay {
+      display: none; position: fixed; inset: 0; background: rgba(15,23,42,.4); z-index: 45;
+    }
+    .overlay.show { display: block; }
+
+    .content { padding: 20px; flex: 1; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 16px; border-radius: 10px; border: none; font-weight: 600;
+      font-size: .9rem; cursor: pointer; transition: .15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary:hover { background: var(--surface2); }
+    .btn-danger { background: var(--danger-soft); color: var(--danger); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 6px 12px; font-size: .82rem; }
+    .btn-block { width: 100%; }
+
+    /* Cards & stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+    }
+    .stat .lbl { font-size: .78rem; color: var(--muted); margin-bottom: 4px; }
+    .stat .val { font-size: 1.45rem; font-weight: 700; }
+    .stat.green .val { color: var(--success); }
+    .stat.indigo .val { color: var(--accent); }
+    .stat.amber .val { color: var(--warning); }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px;
+    }
+    .card + .card { margin-top: 12px; }
+    .section-title {
+      font-size: 1rem; font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .badge {
+      display: inline-flex; align-items: center; padding: 2px 8px;
+      border-radius: 999px; font-size: .72rem; font-weight: 600;
+    }
+    .badge-green { background: var(--success-soft); color: var(--success); }
+    .badge-amber { background: var(--warning-soft); color: var(--warning); }
+    .badge-red { background: var(--danger-soft); color: var(--danger); }
+    .badge-indigo { background: var(--accent-soft); color: var(--accent); }
+    .badge-gray { background: var(--surface2); color: var(--muted); }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center;
+    }
+    .search {
+      flex: 1; min-width: 180px; position: relative;
+    }
+    .search input {
+      width: 100%; padding: 10px 12px 10px 36px;
+      border: 1px solid var(--border); border-radius: 10px;
+      background: var(--surface);
+    }
+    .search::before {
+      content: "⌕"; position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%); color: var(--muted); font-size: 1rem;
+    }
+    .tabs {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border); padding-bottom: 0;
+    }
+    .tab {
+      padding: 10px 14px; border: none; background: transparent;
+      color: var(--muted); font-weight: 600; font-size: .88rem;
+      cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab .cnt {
+      background: var(--surface2); color: var(--muted);
+      padding: 1px 7px; border-radius: 999px; font-size: .72rem; margin-left: 4px;
+    }
+    .tab.active .cnt { background: var(--accent-soft); color: var(--accent); }
+
+    /* Kanban */
+    .board {
+      display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px;
+      min-height: 420px;
+    }
+    .col {
+      flex: 0 0 280px; background: var(--surface2);
+      border-radius: var(--radius); border: 1px solid var(--border);
+      display: flex; flex-direction: column; max-height: calc(100dvh - 200px);
+    }
+    .col-h {
+      padding: 12px 14px; font-weight: 700; font-size: .9rem;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); background: var(--surface);
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .col-h .n {
+      background: var(--surface2); color: var(--muted);
+      font-size: .75rem; padding: 2px 8px; border-radius: 999px;
+    }
+    .col-b {
+      padding: 10px; overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: 8px; min-height: 60px;
+    }
+    .col-b.drag-over { outline: 2px dashed var(--accent); outline-offset: -4px; background: var(--accent-soft); }
+    .deal-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px; cursor: grab; box-shadow: var(--shadow);
+    }
+    .deal-card:hover { border-color: var(--accent); }
+    .deal-card.dragging { opacity: .5; }
+    .deal-card .t { font-weight: 650; font-size: .92rem; margin-bottom: 4px; }
+    .deal-card .sub { font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+    .deal-card .meta { display: flex; flex-wrap: wrap; gap: 4px; font-size: .72rem; }
+    .col-work .col-h { border-left: 3px solid var(--accent); }
+    .col-demo .col-h { border-left: 3px solid var(--purple); }
+    .col-deal .col-h { border-left: 3px solid var(--success); }
+    .col-ref-p .col-h { border-left: 3px solid var(--danger); }
+    .col-ref-m .col-h { border-left: 3px solid var(--warning); }
+
+    /* Lists */
+    .list-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+      cursor: pointer; transition: .15s;
+    }
+    .list-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+    .list-item h4 { font-size: .95rem; margin-bottom: 4px; }
+    .list-item .row { font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; }
+    .empty {
+      text-align: center; color: var(--muted); padding: 40px 16px; font-size: .9rem;
+    }
+
+    /* Modal */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(15,23,42,.45);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 100; opacity: 0; visibility: hidden; transition: .2s;
+      padding: 12px;
+    }
+    .modal-bg.open { opacity: 1; visibility: visible; }
+    .modal {
+      background: var(--surface); border-radius: 16px 16px 12px 12px;
+      width: 100%; max-width: 560px; max-height: 92dvh; overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(15,23,42,.2);
+      transform: translateY(20px); transition: .2s;
+    }
+    .modal-bg.open .modal { transform: translateY(0); }
+    @media (min-width: 640px) {
+      .modal-bg { align-items: center; }
+      .modal { border-radius: 16px; }
+    }
+    .modal-h {
+      padding: 16px 18px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: var(--surface); z-index: 1;
+    }
+    .modal-h h3 { font-size: 1.05rem; }
+    .modal-x {
+      border: none; background: var(--surface2); width: 32px; height: 32px;
+      border-radius: 8px; cursor: pointer; font-size: 1.1rem; color: var(--muted);
+    }
+    .modal-b { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-f {
+      padding: 12px 18px 18px; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;
+    }
+    .fg label {
+      display: block; font-size: .78rem; color: var(--muted); margin-bottom: 4px; font-weight: 500;
+    }
+    .fg input, .fg select, .fg textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 10px; background: var(--surface);
+    }
+    .fg textarea { min-height: 80px; resize: vertical; }
+    .fg input:focus, .fg select:focus, .fg textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
+
+    /* Dashboard pulse chart simple */
+    .pulse-bars {
+      display: flex; align-items: flex-end; gap: 8px; height: 120px; margin-top: 12px;
+    }
+    .pulse-bars .bar-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;
+      justify-content: flex-end;
+    }
+    .pulse-bars .bar {
+      width: 100%; max-width: 36px; border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, #6366f1, #4f46e5); min-height: 4px;
+    }
+    .pulse-bars .bar.past { background: #cbd5e1; }
+    .pulse-bars .dl { font-size: .7rem; color: var(--muted); }
+
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; left: 20px;
+      max-width: 360px; margin-left: auto;
+      background: #0f172a; color: #fff; padding: 12px 16px;
+      border-radius: 12px; z-index: 200; opacity: 0; transform: translateY(12px);
+      transition: .25s; font-size: .9rem; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .hint { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+
+    /* Mobile */
+    @media (max-width: 860px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .menu-btn { display: grid; place-items: center; }
+      .col { flex: 0 0 260px; }
+      .content { padding: 14px; }
+    }
+  </style>
 </head>
-<body><p>Loading full file… open saas-planer from release</p></body>
+<body>
+  <div class="overlay" id="overlay"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark">P</div>
+        <span>Планер SaaS</span>
+      </div>
+      <nav class="nav">
+        <button type="button" class="nav-item active" data-view="dashboard"><span class="ico">⌂</span> Дашборд</button>
+        <div class="nav-section">Работа</div>
+        <button type="button" class="nav-item" data-view="deals"><span class="ico">◫</span> Сделки</button>
+        <button type="button" class="nav-item" data-view="leads"><span class="ico">◎</span> Лиды</button>
+        <button type="button" class="nav-item" data-view="companies"><span class="ico">▣</span> Компании</button>
+        <div class="nav-section">Поле</div>
+        <button type="button" class="nav-item" data-view="activities"><span class="ico">↗</span> Активности</button>
+        <button type="button" class="nav-item" data-view="protocols"><span class="ico">◉</span> Протоколы</button>
+        <div class="nav-section">Данные</div>
+        <button type="button" class="nav-item" data-view="export"><span class="ico">⇓</span> Экспорт / Импорт</button>
+      </nav>
+      <div class="sidebar-foot" id="userFoot">Локальные данные · Mac / iPhone</div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="button" class="menu-btn" id="menuBtn" aria-label="Меню">☰</button>
+          <div class="topbar-title" id="pageTitle">Дашборд</div>
+        </div>
+        <div class="topbar-actions" id="pageActions"></div>
+      </header>
+      <div class="content">
+        <!-- DASHBOARD -->
+        <section class="view active" id="view-dashboard">
+          <p class="hint" id="dashGreeting">Сводка по сделкам, лидам и активностям</p>
+          <div class="stats" id="dashStats"></div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="section-title">Пульс недели · сделки в работу</div>
+            <div class="pulse-bars" id="pulseBars"></div>
+          </div>
+          <div class="grid2" style="gap:12px">
+            <div class="card">
+              <div class="section-title">Ближайшие сделки</div>
+              <div id="dashUpcoming"></div>
+            </div>
+            <div class="card">
+              <div class="section-title">Последние протоколы</div>
+              <div id="dashProtocols"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- DEALS -->
+        <section class="view" id="view-deals">
+          <div class="toolbar">
+            <div class="search"><input type="text" id="dealSearch" placeholder="Сделка, клиент, ИНН..." /></div>
+          </div>
+          <div class="board" id="dealBoard"></div>
+        </section>
+
+        <!-- LEADS -->
+        <section class="view" id="view-leads">
+          <div class="toolbar">
+            <div class="search"><input type="text" id="leadSearch" placeholder="Лид, компания, контакт..." /></div>
+          </div>
+          <div class="tabs" id="leadTabs"></div>
+          <div id="leadList"></div>
+        </section>
+
+        <!-- COMPANIES -->
+        <section class="view" id="view-companies">
+          <div class="toolbar">
+            <div class="search"><input type="text" id="companySearch" placeholder="Название или ИНН..." /></div>
+          </div>
+          <div id="companyList"></div>
+        </section>
+
+        <!-- ACTIVITIES -->
+        <section class="view" id="view-activities">
+          <div class="stats" id="actStats"></div>
+          <div class="toolbar">
+            <div class="search"><input type="text" id="actSearch" placeholder="Тема, место, РМ..." /></div>
+          </div>
+          <div id="actList"></div>
+        </section>
+
+        <!-- PROTOCOLS -->
+        <section class="view" id="view-protocols">
+          <div class="toolbar">
+            <div class="search"><input type="text" id="protSearch" placeholder="Тема, компания..." /></div>
+          </div>
+          <div class="tabs" id="protTabs"></div>
+          <div id="protList"></div>
+        </section>
+
+        <!-- EXPORT -->
+        <section class="view" id="view-export">
+          <div class="card">
+            <div class="section-title">Экспорт</div>
+            <p class="hint">Скачайте резервную копию всех данных (JSON) или сделки в CSV для Excel.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button type="button" class="btn btn-primary" id="btnExpAll">Весь JSON</button>
+              <button type="button" class="btn btn-secondary" id="btnExpDeals">Сделки CSV</button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div class="section-title">Импорт</div>
+            <p class="hint">Загрузите JSON, ранее скачанный из этого приложения.</p>
+            <input type="file" id="importFile" accept=".json" style="margin-bottom:10px" />
+            <button type="button" class="btn btn-secondary" id="btnImport">Импортировать JSON</button>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <div class="section-title">Опасная зона</div>
+            <button type="button" class="btn btn-danger" id="btnClear">Очистить все данные</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modalBg">
+    <div class="modal" id="modal">
+      <div class="modal-h">
+        <h3 id="modalTitle">Запись</h3>
+        <button type="button" class="modal-x" id="modalClose">×</button>
+      </div>
+      <div class="modal-b" id="modalBody"></div>
+      <div class="modal-f" id="modalFoot"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+(function () {
+  "use strict";
+
+  var STORAGE = "saas_planer_v1";
+  var DEAL_STATUSES = [
+    "В работе",
+    "Демо",
+    "Сделка (продажа)",
+    "Отказ от продукта/сделки",
+    "Отказ от встречи"
+  ];
+  var DEAL_COL = {
+    "В работе": "col-work",
+    "Демо": "col-demo",
+    "Сделка (продажа)": "col-deal",
+    "Отказ от продукта/сделки": "col-ref-p",
+    "Отказ от встречи": "col-ref-m"
+  };
+  var LEAD_STATUSES = ["Новый", "В работе", "Квалифицирован", "Отказ", "Стал сделкой"];
+  var ACT_TYPES = ["Полевой визит", "Обучение сети", "Оперативка"];
+  var PROT_STATUSES = ["Готов", "Готовится", "С ошибкой"];
+
+  var db = { deals: [], leads: [], companies: [], activities: [], protocols: [] };
+  var currentView = "dashboard";
+  var modalMode = null;
+  var modalId = null;
+  var dragId = null;
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function money(n) {
+    n = Number(n) || 0;
+    try {
+      return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(n);
+    } catch (e) {
+      return n.toLocaleString("ru-RU") + " ₽";
+    }
+  }
+  function fmtDate(d) {
+    if (!d) return "—";
+    var x = new Date(d);
+    if (isNaN(x.getTime())) return String(d);
+    return x.toLocaleDateString("ru-RU");
+  }
+  function toast(msg) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(function () { el.classList.remove("show"); }, 2500);
+  }
+  function esc(s) {
+    if (s == null) return "";
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE);
+      if (raw) {
+        var p = JSON.parse(raw);
+        db.deals = p.deals || [];
+        db.leads = p.leads || [];
+        db.companies = p.companies || [];
+        db.activities = p.activities || [];
+        db.protocols = p.protocols || [];
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORAGE, JSON.stringify(db));
+    } catch (e) {
+      toast("Не удалось сохранить");
+    }
+  }
+
+  /* Navigation */
+  function setView(name) {
+    currentView = name;
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+    var el = document.getElementById("view-" + name);
+    if (el) el.classList.add("active");
+    document.querySelectorAll(".nav-item").forEach(function (n) {
+      n.classList.toggle("active", n.getAttribute("data-view") === name);
+    });
+    var titles = {
+      dashboard: "Дашборд",
+      deals: "Сделки",
+      leads: "Лиды",
+      companies: "Компании",
+      activities: "Активности",
+      protocols: "Протоколы встреч",
+      export: "Экспорт / Импорт"
+    };
+    document.getElementById("pageTitle").textContent = titles[name] || name;
+    renderPageActions();
+    renderView();
+    closeSidebar();
+  }
+  function renderPageActions() {
+    var box = document.getElementById("pageActions");
+    var map = {
+      deals: '<button type="button" class="btn btn-primary btn-sm" id="actNewDeal">+ Сделка</button>',
+      leads: '<button type="button" class="btn btn-primary btn-sm" id="actNewLead">+ Лид</button>',
+      companies: '<button type="button" class="btn btn-primary btn-sm" id="actNewCompany">+ Компания</button>',
+      activities: '<button type="button" class="btn btn-primary btn-sm" id="actNewActivity">+ Активность</button>',
+      protocols: '<button type="button" class="btn btn-primary btn-sm" id="actNewProtocol">+ Протокол</button>',
+      dashboard: '<button type="button" class="btn btn-primary btn-sm" id="actNewDeal2">+ Сделка</button>'
+    };
+    box.innerHTML = map[currentView] || "";
+    var b1 = document.getElementById("actNewDeal");
+    var b2 = document.getElementById("actNewDeal2");
+    var b3 = document.getElementById("actNewLead");
+    var b4 = document.getElementById("actNewCompany");
+    var b5 = document.getElementById("actNewActivity");
+    var b6 = document.getElementById("actNewProtocol");
+    if (b1) b1.onclick = function () { openDealModal(null); };
+    if (b2) b2.onclick = function () { openDealModal(null); };
+    if (b3) b3.onclick = function () { openLeadModal(null); };
+    if (b4) b4.onclick = function () { openCompanyModal(null); };
+    if (b5) b5.onclick = function () { openActivityModal(null); };
+    if (b6) b6.onclick = function () { openProtocolModal(null); };
+  }
+
+  function openSidebar() {
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("overlay").classList.add("show");
+  }
+  function closeSidebar() {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("overlay").classList.remove("show");
+  }
+
+  /* Dashboard */
+  function renderDashboard() {
+    var deals = db.deals;
+    var dealProfit = 0, dealCount = 0, total = deals.length;
+    var byStatus = {};
+    DEAL_STATUSES.forEach(function (s) { byStatus[s] = 0; });
+    deals.forEach(function (d) {
+      if (byStatus[d.status] !== undefined) byStatus[d.status]++;
+      var p = parseFloat(d.profit) || 0;
+      if (d.status === "Сделка (продажа)") {
+        dealProfit += p;
+        dealCount++;
+      }
+    });
+    var chk = dealProfit;
+    var html = "";
+    html += stat("Всего сделок", total, "indigo");
+    html += stat("ЧКД", money(chk), "green");
+    html += stat("Сделок закрыто", dealCount, "");
+    html += stat("Лиды", db.leads.length, "");
+    html += stat("Компании", db.companies.length, "");
+    html += stat("Активности", db.activities.length, "");
+    document.getElementById("dashStats").innerHTML = html;
+
+    // pulse: deals created last 7 days by weekday
+    var days = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+    var counts = [0, 0, 0, 0, 0, 0, 0];
+    var now = new Date();
+    var weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 6);
+    weekAgo.setHours(0, 0, 0, 0);
+    deals.forEach(function (d) {
+      if (!d.createdAt) return;
+      var dt = new Date(d.createdAt);
+      if (dt >= weekAgo) counts[dt.getDay()]++;
+    });
+    var max = Math.max.apply(null, counts.concat([1]));
+    var order = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+    var bars = "";
+    order.forEach(function (di) {
+      var h = Math.round((counts[di] / max) * 100);
+      bars += '<div class="bar-wrap"><div class="bar" style="height:' + Math.max(h, 4) + '%"></div><div class="dl">' + days[di] + "</div></div>";
+    });
+    document.getElementById("pulseBars").innerHTML = bars;
+
+    var upcoming = deals.filter(function (d) {
+      return d.dueDate && d.status !== "Сделка (продажа)" && d.status.indexOf("Отказ") !== 0;
+    }).sort(function (a, b) { return (a.dueDate || "").localeCompare(b.dueDate || ""); }).slice(0, 5);
+    document.getElementById("dashUpcoming").innerHTML = upcoming.length
+      ? upcoming.map(function (d) {
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" data-open-deal="' + esc(d.id) + '">' +
+            "<strong>" + esc(d.title) + "</strong><br><span style=\"font-size:.8rem;color:var(--muted)\">" +
+            fmtDate(d.dueDate) + (d.client ? " · " + esc(d.client) : "") + "</span></div>";
+        }).join("")
+      : '<div class="empty">Нет ближайших сроков</div>';
+
+    var prots = db.protocols.slice().sort(function (a, b) {
+      return (b.date || "").localeCompare(a.date || "");
+    }).slice(0, 4);
+    document.getElementById("dashProtocols").innerHTML = prots.length
+      ? prots.map(function (p) {
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" data-open-prot="' + esc(p.id) + '">' +
+            "<strong>" + esc(p.title) + "</strong><br><span style=\"font-size:.8rem;color:var(--muted)\">" +
+            fmtDate(p.date) + " · " + esc(p.status || "") + "</span></div>";
+        }).join("")
+      : '<div class="empty">Протоколов пока нет</div>';
+
+    var h = new Date().getHours();
+    var greet = h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
+    document.getElementById("dashGreeting").textContent = greet + "! Сводка на " + fmtDate(new Date().toISOString());
+
+    document.getElementById("dashUpcoming").onclick = function (e) {
+      var id = e.target.closest("[data-open-deal]");
+      if (id) openDealModal(id.getAttribute("data-open-deal"));
+    };
+    document.getElementById("dashProtocols").onclick = function (e) {
+      var id = e.target.closest("[data-open-prot]");
+      if (id) openProtocolModal(id.getAttribute("data-open-prot"));
+    };
+  }
+  function stat(lbl, val, cls) {
+    return '<div class="stat ' + (cls || "") + '"><div class="lbl">' + esc(lbl) + '</div><div class="val">' + val + "</div></div>";
+  }
+
+  /* Deals Kanban */
+  function renderDeals() {
+    var q = (document.getElementById("dealSearch").value || "").trim().toLowerCase();
+    var list = db.deals.filter(function (d) {
+      if (!q) return true;
+      var hay = [d.title, d.client, d.inn, d.contact, d.assignee, d.description].concat(d.tags || []).join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    var board = document.getElementById("dealBoard");
+    board.innerHTML = "";
+    DEAL_STATUSES.forEach(function (status) {
+      var items = list.filter(function (d) { return d.status === status; });
+      var col = document.createElement("div");
+      col.className = "col " + (DEAL_COL[status] || "");
+      col.innerHTML = '<div class="col-h"><span>' + esc(status) + '</span><span class="n">' + items.length + "</span></div>" +
+        '<div class="col-b" data-status="' + esc(status) + '"></div>';
+      var body = col.querySelector(".col-b");
+      body.addEventListener("dragover", function (e) { e.preventDefault(); body.classList.add("drag-over"); });
+      body.addEventListener("dragleave", function () { body.classList.remove("drag-over"); });
+      body.addEventListener("drop", function (e) {
+        e.preventDefault();
+        body.classList.remove("drag-over");
+        if (!dragId) return;
+        var d = db.deals.find(function (x) { return x.id === dragId; });
+        if (d && d.status !== status) {
+          d.status = status;
+          d.updatedAt = new Date().toISOString();
+          save();
+          renderDeals();
+          toast("Перемещено → " + status);
+        }
+      });
+      if (!items.length) {
+        body.innerHTML = '<div class="empty">Пусто</div>';
+      } else {
+        items.forEach(function (d) {
+          var card = document.createElement("div");
+          card.className = "deal-card";
+          card.draggable = true;
+          card.innerHTML =
+            '<div class="t">' + esc(d.title || "Без названия") + "</div>" +
+            '<div class="sub">' + esc(d.client || "") + (d.inn ? " · ИНН " + esc(d.inn) : "") + "</div>" +
+            '<div class="meta">' +
+            (d.profit ? '<span class="badge badge-green">' + money(d.profit) + "</span>" : "") +
+            (d.dueDate ? '<span class="badge badge-amber">' + fmtDate(d.dueDate) + "</span>" : "") +
+            (d.assignee ? '<span class="badge badge-gray">' + esc(d.assignee) + "</span>" : "") +
+            "</div>";
+          card.addEventListener("dragstart", function () { dragId = d.id; card.classList.add("dragging"); });
+          card.addEventListener("dragend", function () { dragId = null; card.classList.remove("dragging"); });
+          card.addEventListener("click", function () { openDealModal(d.id); });
+          body.appendChild(card);
+        });
+      }
+      board.appendChild(col);
+    });
+  }
+
+  function openDealModal(id) {
+    modalMode = "deal";
+    modalId = id;
+    var d = id ? db.deals.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modalTitle").textContent = d ? "Сделка" : "Новая сделка";
+    var stOpts = DEAL_STATUSES.map(function (s) {
+      return '<option value="' + esc(s) + '"' + (d && d.status === s ? " selected" : "") + ">" + esc(s) + "</option>";
+    }).join("");
+    document.getElementById("modalBody").innerHTML =
+      fg("title", "Название *", d && d.title, "text") +
+      fg("description", "Описание", d && d.description, "textarea") +
+      '<div class="grid2">' +
+      fgSelect("status", "Статус", stOpts) +
+      fg("dueDate", "Срок", d && d.dueDate, "date") +
+      "</div><div class=\"grid2\">" +
+      fg("assignee", "Исполнитель", d && d.assignee, "text") +
+      fg("profit", "Прибыль / ЧКД (₽)", d && d.profit, "number") +
+      "</div><div class=\"grid2\">" +
+      fg("client", "Клиент / Компания", d && d.client, "text") +
+      fg("inn", "ИНН", d && d.inn, "text") +
+      "</div><div class=\"grid2\">" +
+      fg("contact", "Контакт", d && d.contact, "text") +
+      fg("leadSource", "Источник лида", d && d.leadSource, "text") +
+      "</div>" +
+      fg("tags", "Теги (через запятую)", d && (d.tags || []).join(", "), "text");
+    document.getElementById("modalFoot").innerHTML =
+      (d ? '<button type="button" class="btn btn-danger" id="mDel" style="margin-right:auto">Удалить</button>' : "") +
+      '<button type="button" class="btn btn-secondary" id="mCancel">Отмена</button>' +
+      '<button type="button" class="btn btn-primary" id="mSave">Сохранить</button>';
+    bindModalFoot(saveDeal, d ? function () { delDeal(id); } : null);
+    openModal();
+  }
+  function saveDeal() {
+    var title = val("title");
+    if (!title) { toast("Укажите название"); return; }
+    var tags = val("tags").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    var data = {
+      title: title,
+      description: val("description"),
+      status: val("status") || "В работе",
+      dueDate: val("dueDate") || null,
+      assignee: val("assignee"),
+      profit: parseFloat(val("profit")) || 0,
+      client: val("client"),
+      inn: val("inn"),
+      contact: val("contact"),
+      leadSource: val("leadSource"),
+      tags: tags
+    };
+    if (modalId) {
+      var d = db.deals.find(function (x) { return x.id === modalId; });
+      if (d) {
+        Object.keys(data).forEach(function (k) { d[k] = data[k]; });
+        d.updatedAt = new Date().toISOString();
+      }
+      toast("Сделка обновлена");
+    } else {
+      data.id = uid();
+      data.createdAt = new Date().toISOString();
+      data.comments = [];
+      db.deals.push(data);
+      toast("Сделка создана");
+    }
+    save();
+    closeModal();
+    renderView();
+  }
+  function delDeal(id) {
+    if (!confirm("Удалить сделку?")) return;
+    db.deals = db.deals.filter(function (x) { return x.id !== id; });
+    save();
+    closeModal();
+    renderView();
+    toast("Удалено");
+  }
+
+  /* Leads */
+  function renderLeads() {
+    var q = (document.getElementById("leadSearch").value || "").trim().toLowerCase();
+    var tab = document.getElementById("leadTabs").getAttribute("data-tab") || "";
+    var list = db.leads.filter(function (l) {
+      if (tab && l.status !== tab) return false;
+      if (!q) return true;
+      var hay = [l.name, l.company, l.contact, l.source].join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    var tabs = '<button type="button" class="tab' + (!tab ? " active" : "") + '" data-t="">Все<span class="cnt">' + db.leads.length + "</span></button>";
+    LEAD_STATUSES.forEach(function (s) {
+      var c = db.leads.filter(function (l) { return l.status === s; }).length;
+      tabs += '<button type="button" class="tab' + (tab === s ? " active" : "") + '" data-t="' + esc(s) + '">' + esc(s) +
+        '<span class="cnt">' + c + "</span></button>";
+    });
+    document.getElementById("leadTabs").innerHTML = tabs;
+    document.getElementById("leadTabs").onclick = function (e) {
+      var t = e.target.closest(".tab");
+      if (!t) return;
+      document.getElementById("leadTabs").setAttribute("data-tab", t.getAttribute("data-t") || "");
+      renderLeads();
+    };
+    document.getElementById("leadList").innerHTML = list.length
+      ? list.map(function (l) {
+          return '<div class="list-item" data-id="' + esc(l.id) + '"><h4>' + esc(l.name || "Без имени") +
+            ' <span class="badge badge-indigo">' + esc(l.status || "") + "</span></h4>" +
+            '<div class="row">' + esc(l.company || "") + (l.contact ? " · " + esc(l.contact) : "") +
+            (l.source ? " · " + esc(l.source) : "") + "</div></div>";
+        }).join("")
+      : '<div class="empty">Лидов нет — нажмите «+ Лид»</div>';
+    document.getElementById("leadList").onclick = function (e) {
+      var it = e.target.closest("[data-id]");
+      if (it) openLeadModal(it.getAttribute("data-id"));
+    };
+  }
+  function openLeadModal(id) {
+    modalMode = "lead";
+    modalId = id;
+    var l = id ? db.leads.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modalTitle").textContent = l ? "Лид" : "Новый лид";
+    var st = LEAD_STATUSES.map(function (s) {
+      return '<option value="' + esc(s) + '"' + (l && l.status === s ? " selected" : "") + ">" + esc(s) + "</option>";
+    }).join("");
+    document.getElementById("modalBody").innerHTML =
+      fg("name", "Имя / название *", l && l.name, "text") +
+      fg("company", "Компания", l && l.company, "text") +
+      '<div class="grid2">' +
+      fg("contact", "Контакт", l && l.contact, "text") +
+      fg("source", "Источник", l && l.source, "text") +
+      "</div>" +
+      fgSelect("status", "Статус", st) +
+      fg("notes", "Заметки", l && l.notes, "textarea");
+    document.getElementById("modalFoot").innerHTML =
+      (l ? '<button type="button" class="btn btn-danger" id="mDel" style="margin-right:auto">Удалить</button>' : "") +
+      '<button type="button" class="btn btn-secondary" id="mCancel">Отмена</button>' +
+      '<button type="button" class="btn btn-primary" id="mSave">Сохранить</button>';
+    bindModalFoot(function () {
+      var name = val("name");
+      if (!name) { toast("Укажите имя"); return; }
+      var data = {
+        name: name, company: val("company"), contact: val("contact"),
+        source: val("source"), status: val("status") || "Новый", notes: val("notes")
+      };
+      if (modalId) {
+        var x = db.leads.find(function (a) { return a.id === modalId; });
+        if (x) Object.keys(data).forEach(function (k) { x[k] = data[k]; });
+        toast("Лид обновлён");
+      } else {
+        data.id = uid();
+        data.createdAt = new Date().toISOString();
+        db.leads.push(data);
+        toast("Лид создан");
+      }
+      save(); closeModal(); renderView();
+    }, l ? function () {
+      if (!confirm("Удалить лид?")) return;
+      db.leads = db.leads.filter(function (x) { return x.id !== id; });
+      save(); closeModal(); renderView(); toast("Удалено");
+    } : null);
+    openModal();
+  }
+
+  /* Companies */
+  function renderCompanies() {
+    var q = (document.getElementById("companySearch").value || "").trim().toLowerCase();
+    var list = db.companies.filter(function (c) {
+      if (!q) return true;
+      return [c.name, c.inn, c.contact].join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+    document.getElementById("companyList").innerHTML = list.length
+      ? list.map(function (c) {
+          return '<div class="list-item" data-id="' + esc(c.id) + '"><h4>' + esc(c.name || "") + "</h4>" +
+            '<div class="row">' + (c.inn ? "ИНН " + esc(c.inn) : "") +
+            (c.contact ? " · " + esc(c.contact) : "") + "</div></div>";
+        }).join("")
+      : '<div class="empty">Компаний нет</div>';
+    document.getElementById("companyList").onclick = function (e) {
+      var it = e.target.closest("[data-id]");
+      if (it) openCompanyModal(it.getAttribute("data-id"));
+    };
+  }
+  function openCompanyModal(id) {
+    modalMode = "company";
+    modalId = id;
+    var c = id ? db.companies.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modalTitle").textContent = c ? "Компания" : "Новая компания";
+    document.getElementById("modalBody").innerHTML =
+      fg("name", "Название *", c && c.name, "text") +
+      '<div class="grid2">' +
+      fg("inn", "ИНН", c && c.inn, "text") +
+      fg("contact", "Контакт", c && c.contact, "text") +
+      "</div>" +
+      fg("notes", "Заметки", c && c.notes, "textarea");
+    document.getElementById("modalFoot").innerHTML =
+      (c ? '<button type="button" class="btn btn-danger" id="mDel" style="margin-right:auto">Удалить</button>' : "") +
+      '<button type="button" class="btn btn-secondary" id="mCancel">Отмена</button>' +
+      '<button type="button" class="btn btn-primary" id="mSave">Сохранить</button>';
+    bindModalFoot(function () {
+      var name = val("name");
+      if (!name) { toast("Укажите название"); return; }
+      var data = { name: name, inn: val("inn"), contact: val("contact"), notes: val("notes") };
+      if (modalId) {
+        var x = db.companies.find(function (a) { return a.id === modalId; });
+        if (x) Object.keys(data).forEach(function (k) { x[k] = data[k]; });
+        toast("Сохранено");
+      } else {
+        data.id = uid();
+        data.createdAt = new Date().toISOString();
+        db.companies.push(data);
+        toast("Компания добавлена");
+      }
+      save(); closeModal(); renderView();
+    }, c ? function () {
+      if (!confirm("Удалить компанию?")) return;
+      db.companies = db.companies.filter(function (x) { return x.id !== id; });
+      save(); closeModal(); renderView(); toast("Удалено");
+    } : null);
+    openModal();
+  }
+
+  /* Activities */
+  function renderActivities() {
+    var counts = {};
+    ACT_TYPES.forEach(function (t) { counts[t] = 0; });
+    db.activities.forEach(function (a) {
+      if (counts[a.type] !== undefined) counts[a.type]++;
+    });
+    var sh = "";
+    ACT_TYPES.forEach(function (t) {
+      sh += stat(t, counts[t] || 0, t === "Полевой визит" ? "indigo" : t === "Обучение сети" ? "green" : "");
+    });
+    sh += stat("Всего", db.activities.length, "");
+    document.getElementById("actStats").innerHTML = sh;
+
+    var q = (document.getElementById("actSearch").value || "").trim().toLowerCase();
+    var list = db.activities.filter(function (a) {
+      if (!q) return true;
+      return [a.title, a.place, a.pm, a.type].join(" ").toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+
+    document.getElementById("actList").innerHTML = list.length
+      ? list.map(function (a) {
+          return '<div class="list-item" data-id="' + esc(a.id) + '">' +
+            '<h4><span class="badge badge-indigo">' + esc(a.type || "") + "</span> " + esc(a.title || "") + "</h4>" +
+            '<div class="row">' + fmtDate(a.date) + (a.place ? " · " + esc(a.place) : "") +
+            (a.pm ? " · РМ: " + esc(a.pm) : "") +
+            (a.participants ? " · уч.: " + esc(a.participants) : "") + "</div></div>";
+        }).join("")
+      : '<div class="empty">Активностей нет</div>';
+    document.getElementById("actList").onclick = function (e) {
+      var it = e.target.closest("[data-id]");
+      if (it) openActivityModal(it.getAttribute("data-id"));
+    };
+  }
+  function openActivityModal(id) {
+    modalMode = "activity";
+    modalId = id;
+    var a = id ? db.activities.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modalTitle").textContent = a ? "Активность" : "Новая активность";
+    var tOpts = ACT_TYPES.map(function (t) {
+      return '<option value="' + esc(t) + '"' + (a && a.type === t ? " selected" : "") + ">" + esc(t) + "</option>";
+    }).join("");
+    document.getElementById("modalBody").innerHTML =
+      fgSelect("type", "Тип", tOpts) +
+      fg("title", "Тема *", a && a.title, "text") +
+      '<div class="grid2">' +
+      fg("date", "Дата", a && a.date, "date") +
+      fg("participants", "Участников", a && a.participants, "number") +
+      "</div><div class=\"grid2\">" +
+      fg("place", "Место", a && a.place, "text") +
+      fg("pm", "РМ / ответственный", a && a.pm, "text") +
+      "</div>" +
+      fg("notes", "Заметки", a && a.notes, "textarea");
+    document.getElementById("modalFoot").innerHTML =
+      (a ? '<button type="button" class="btn btn-danger" id="mDel" style="margin-right:auto">Удалить</button>' : "") +
+      '<button type="button" class="btn btn-secondary" id="mCancel">Отмена</button>' +
+      '<button type="button" class="btn btn-primary" id="mSave">Сохранить</button>';
+    bindModalFoot(function () {
+      var title = val("title");
+      if (!title) { toast("Укажите тему"); return; }
+      var data = {
+        type: val("type"), title: title, date: val("date") || null,
+        participants: val("participants"), place: val("place"), pm: val("pm"), notes: val("notes")
+      };
+      if (modalId) {
+        var x = db.activities.find(function (z) { return z.id === modalId; });
+        if (x) Object.keys(data).forEach(function (k) { x[k] = data[k]; });
+        toast("Сохранено");
+      } else {
+        data.id = uid();
+        data.createdAt = new Date().toISOString();
+        db.activities.push(data);
+        toast("Активность создана");
+      }
+      save(); closeModal(); renderView();
+    }, a ? function () {
+      if (!confirm("Удалить?")) return;
+      db.activities = db.activities.filter(function (x) { return x.id !== id; });
+      save(); closeModal(); renderView(); toast("Удалено");
+    } : null);
+    openModal();
+  }
+
+  /* Protocols */
+  function renderProtocols() {
+    var tab = document.getElementById("protTabs").getAttribute("data-tab") || "";
+    var q = (document.getElementById("protSearch").value || "").trim().toLowerCase();
+    var list = db.protocols.filter(function (p) {
+      if (tab && p.status !== tab) return false;
+      if (!q) return true;
+      return [p.title, p.company, p.summary].join(" ").toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+
+    var tabs = '<button type="button" class="tab' + (!tab ? " active" : "") + '" data-t="">Все<span class="cnt">' + db.protocols.length + "</span></button>";
+    PROT_STATUSES.forEach(function (s) {
+      var c = db.protocols.filter(function (p) { return p.status === s; }).length;
+      tabs += '<button type="button" class="tab' + (tab === s ? " active" : "") + '" data-t="' + esc(s) + '">' + esc(s) +
+        '<span class="cnt">' + c + "</span></button>";
+    });
+    document.getElementById("protTabs").innerHTML = tabs;
+    document.getElementById("protTabs").onclick = function (e) {
+      var t = e.target.closest(".tab");
+      if (!t) return;
+      document.getElementById("protTabs").setAttribute("data-tab", t.getAttribute("data-t") || "");
+      renderProtocols();
+    };
+
+    document.getElementById("protList").innerHTML = list.length
+      ? list.map(function (p) {
+          var bcls = p.status === "Готов" ? "badge-green" : p.status === "С ошибкой" ? "badge-red" : "badge-amber";
+          return '<div class="list-item" data-id="' + esc(p.id) + '"><h4>' + esc(p.title || "") +
+            ' <span class="badge ' + bcls + '">' + esc(p.status || "") + "</span></h4>" +
+            '<div class="row">' + fmtDate(p.date) + (p.duration ? " · " + esc(p.duration) : "") +
+            (p.company ? " · " + esc(p.company) : "") + "</div>" +
+            (p.summary ? '<div class="row" style="margin-top:4px">' + esc(p.summary.slice(0, 120)) + (p.summary.length > 120 ? "…" : "") + "</div>" : "") +
+            "</div>";
+        }).join("")
+      : '<div class="empty">Протоколов нет</div>';
+    document.getElementById("protList").onclick = function (e) {
+      var it = e.target.closest("[data-id]");
+      if (it) openProtocolModal(it.getAttribute("data-id"));
+    };
+  }
+  function openProtocolModal(id) {
+    modalMode = "protocol";
+    modalId = id;
+    var p = id ? db.protocols.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("modalTitle").textContent = p ? "Протокол" : "Новый протокол";
+    var st = PROT_STATUSES.map(function (s) {
+      return '<option value="' + esc(s) + '"' + (p && p.status === s ? " selected" : "") + ">" + esc(s) + "</option>";
+    }).join("");
+    document.getElementById("modalBody").innerHTML =
+      fg("title", "Тема *", p && p.title, "text") +
+      '<div class="grid2">' +
+      fg("date", "Дата", p && p.date, "date") +
+      fg("duration", "Длительность", p && p.duration, "text") +
+      "</div><div class=\"grid2\">" +
+      fg("company", "Компания", p && p.company, "text") +
+      fgSelect("status", "Статус", st) +
+      "</div>" +
+      fg("summary", "Итоги / протокол", p && p.summary, "textarea");
+    document.getElementById("modalFoot").innerHTML =
+      (p ? '<button type="button" class="btn btn-danger" id="mDel" style="margin-right:auto">Удалить</button>' : "") +
+      '<button type="button" class="btn btn-secondary" id="mCancel">Отмена</button>' +
+      '<button type="button" class="btn btn-primary" id="mSave">Сохранить</button>';
+    bindModalFoot(function () {
+      var title = val("title");
+      if (!title) { toast("Укажите тему"); return; }
+      var data = {
+        title: title, date: val("date") || null, duration: val("duration"),
+        company: val("company"), status: val("status") || "Готовится", summary: val("summary")
+      };
+      if (modalId) {
+        var x = db.protocols.find(function (z) { return z.id === modalId; });
+        if (x) Object.keys(data).forEach(function (k) { x[k] = data[k]; });
+        toast("Сохранено");
+      } else {
+        data.id = uid();
+        data.createdAt = new Date().toISOString();
+        db.protocols.push(data);
+        toast("Протокол создан");
+      }
+      save(); closeModal(); renderView();
+    }, p ? function () {
+      if (!confirm("Удалить протокол?")) return;
+      db.protocols = db.protocols.filter(function (x) { return x.id !== id; });
+      save(); closeModal(); renderView(); toast("Удалено");
+    } : null);
+    openModal();
+  }
+
+  /* Form helpers */
+  function fg(id, label, value, type) {
+    if (type === "textarea") {
+      return '<div class="fg"><label>' + esc(label) + '</label><textarea id="f_' + id + '">' + esc(value || "") + "</textarea></div>";
+    }
+    return '<div class="fg"><label>' + esc(label) + '</label><input type="' + (type || "text") + '" id="f_' + id + '" value="' + esc(value != null ? value : "") + '" /></div>';
+  }
+  function fgSelect(id, label, optionsHtml) {
+    return '<div class="fg"><label>' + esc(label) + "</label><select id=\"f_" + id + '">' + optionsHtml + "</select></div>";
+  }
+  function val(id) {
+    var el = document.getElementById("f_" + id);
+    return el ? (el.value || "").trim() : "";
+  }
+  function bindModalFoot(onSave, onDel) {
+    document.getElementById("mCancel").onclick = closeModal;
+    document.getElementById("mSave").onclick = onSave;
+    var del = document.getElementById("mDel");
+    if (del && onDel) del.onclick = onDel;
+  }
+  function openModal() {
+    document.getElementById("modalBg").classList.add("open");
+  }
+  function closeModal() {
+    document.getElementById("modalBg").classList.remove("open");
+    modalMode = null;
+    modalId = null;
+  }
+
+  function renderView() {
+    if (currentView === "dashboard") renderDashboard();
+    else if (currentView === "deals") renderDeals();
+    else if (currentView === "leads") renderLeads();
+    else if (currentView === "companies") renderCompanies();
+    else if (currentView === "activities") renderActivities();
+    else if (currentView === "protocols") renderProtocols();
+  }
+
+  /* Export / Import */
+  function exportAll() {
+    var blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+    download(blob, "planer-saas-" + new Date().toISOString().slice(0, 10) + ".json");
+    toast("JSON скачан");
+  }
+  function exportDealsCsv() {
+    var headers = ["id", "title", "status", "client", "inn", "profit", "dueDate", "assignee", "contact", "leadSource", "tags"];
+    var lines = [headers.join(",")];
+    db.deals.forEach(function (d) {
+      var row = [d.id, d.title, d.status, d.client, d.inn, d.profit, d.dueDate, d.assignee, d.contact, d.leadSource, (d.tags || []).join(";")];
+      lines.push(row.map(function (c) {
+        var s = String(c == null ? "" : c);
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }).join(","));
+    });
+    var blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    download(blob, "sdelki-" + new Date().toISOString().slice(0, 10) + ".csv");
+    toast("CSV скачан");
+  }
+  function download(blob, name) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+  }
+  function importJson(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        var p = JSON.parse(e.target.result);
+        if (!p || typeof p !== "object") throw new Error("Неверный формат");
+        if (confirm("Заменить текущие данные импортом?")) {
+          db.deals = p.deals || [];
+          db.leads = p.leads || [];
+          db.companies = p.companies || [];
+          db.activities = p.activities || [];
+          db.protocols = p.protocols || [];
+          save();
+          renderView();
+          toast("Импорт выполнен");
+        }
+      } catch (err) {
+        toast("Ошибка: " + (err.message || err));
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  }
+
+  /* Events */
+  document.querySelectorAll(".nav-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setView(btn.getAttribute("data-view"));
+    });
+  });
+  document.getElementById("menuBtn").onclick = openSidebar;
+  document.getElementById("overlay").onclick = closeSidebar;
+  document.getElementById("modalClose").onclick = closeModal;
+  document.getElementById("modalBg").addEventListener("click", function (e) {
+    if (e.target === e.currentTarget) closeModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeModal();
+  });
+
+  ["dealSearch", "leadSearch", "companySearch", "actSearch", "protSearch"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("input", function () { renderView(); });
+  });
+
+  document.getElementById("btnExpAll").onclick = exportAll;
+  document.getElementById("btnExpDeals").onclick = exportDealsCsv;
+  document.getElementById("btnImport").onclick = function () {
+    var f = document.getElementById("importFile").files[0];
+    if (!f) { toast("Выберите файл"); return; }
+    importJson(f);
+  };
+  document.getElementById("btnClear").onclick = function () {
+    if (!confirm("Удалить ВСЕ данные безвозвратно?")) return;
+    db = { deals: [], leads: [], companies: [], activities: [], protocols: [] };
+    save();
+    renderView();
+    toast("Данные очищены");
+  };
+
+  load();
+  setView("dashboard");
+})();
+  </script>
+</body>
 </html>
