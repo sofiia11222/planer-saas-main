@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "./config/db.js";
-import { logger } from "./utils/logger.js";
+import { prisma } from "../../config/db.js";
+import { logger } from "../../utils/logger.js";
 
 export async function ensureDemoData() {
   const email = "demo@planer.local";
