@@ -5,7 +5,11 @@
 ## Структура папок
 
 ```
-saas-backend/
+planer-saas-main/
+├── public/                # фронтенд (статика; Express отдаёт её как есть)
+│   ├── index.html         # редирект на saas-planer.html
+│   ├── landing.html       # лендинг
+│   └── saas-planer.html   # сам планер (Kanban, сделки, ЧКД)
 ├── prisma/
 │   ├── schema.prisma      # модели + soft delete + индексы
 │   └── schema.sql         # тот же смысл на чистом SQL
@@ -19,9 +23,13 @@ saas-backend/
 │   │   │   ├── repository/# доступ к БД (CRUD)
 │   │   │   ├── service/   # бизнес-логика + ACL
 │   │   │   └── routes/    # REST API
-│   │   └── workspaces/    # проверка членства
+│   │   ├── workspaces/    # проверка членства
+│   │   └── demo/          # демо-сессия: routes + seed (demo.seed.ts)
 │   └── server.ts
-└── examples/http-examples.md
+├── docs/
+│   ├── LOCAL_DEMO.md      # локальное демо (Mac + PostgreSQL)
+│   └── http-examples.md   # примеры HTTP-запросов
+└── .github/workflows/pages.yml   # публикация public/ на GitHub Pages
 ```
 
 ## Принципы
@@ -42,7 +50,7 @@ saas-backend/
 ## Запуск
 
 ```bash
-cd saas-backend
+cd planer-saas-main
 cp .env.example .env   # пропишите DATABASE_URL и JWT_SECRET
 npm install
 npx prisma migrate dev --name init
@@ -58,3 +66,8 @@ npm run dev
 4. Routes + подключение в `server.ts`
 
 Полный эталон CRUD — модуль **Tasks**.
+
+## Документация
+
+- [Локальное демо для защиты](docs/LOCAL_DEMO.md)
+- [Примеры HTTP-запросов](docs/http-examples.md)

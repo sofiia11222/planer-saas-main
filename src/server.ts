@@ -7,7 +7,7 @@ import { demoRouter } from "./modules/demo/demo.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { logger } from "./utils/logger.js";
 import { disconnectDb } from "./config/db.js";
-import { ensureDemoData } from "./seed-demo.js";
+import { ensureDemoData } from "./modules/demo/demo.seed.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");

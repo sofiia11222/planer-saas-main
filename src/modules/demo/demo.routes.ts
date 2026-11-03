@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ensureDemoData } from "../../seed-demo.js";
+import { ensureDemoData } from "./demo.seed.js";
 import { signToken } from "../../middleware/auth.js";
 
 export const demoRouter = Router();
